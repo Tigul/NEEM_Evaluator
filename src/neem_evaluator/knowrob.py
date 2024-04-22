@@ -130,10 +130,14 @@ def get_link_name_for_object(object: str) -> str:
     :param object: The knowrob instance
     :return:  The link name as used in the TFs
     """
-    query = prolog.once(f"has_base_link('{object}', A)")
+    query = prolog.once(f"has_base_link_name('{object}', A)")
     if query:
         link_name = query["A"]
-        return link_name.split("#")[1]
+        return query["A"]
+        # return link_name.split("#")[1]
+    else:
+        query = prolog.once(f"has_base_link('{object}', A)")
+
 
 
 @init_prolog

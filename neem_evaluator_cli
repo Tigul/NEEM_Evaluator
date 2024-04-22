@@ -1,0 +1,61 @@
+#! /usr/bin/env python3
+
+import argparse
+import os.path
+
+from neem_evaluator.neem import Neem
+from neem_evaluator.events import event_metric
+from neem_evaluator.metrics import vel_metric
+from neem_evaluator.knowrob import remember_neem
+
+if __name__ == '__main__':
+    # Define the command line arguments
+    parser = argparse.ArgumentParser(prog="NEEM Evaluator",
+                                     description='Evaluates NEEMs for different metrics')
+    parser.add_argument('-n', '--neem', type=str, help='Path to NEEM folder', required=True)
+    parser.add_argument('--base-neem', type=str, help='Path to base NEEM folder', required=False)
+    parser.add_argument('--metric', type=str, help='Metric to be evaluated',
+                        choices=['velocity', 'co-appearance', 'relative-distance', 'time-ordered', "action-count",
+                                 "execution-time", "grasping-attempts"])
+    parser.add_argument('--validate', type=bool, help='If the NEEM should only be validated', default=False)
+    args = parser.parse_args()
+
+    neem_path = os.path.abspath(args.neem)
+    # If the given NEEM is a directory, load it into Knowrob
+    if os.path.isdir(neem_path):
+        remember_neem(neem_path)
+        n = Neem()
+    else:
+        n = Neem(neem_path)
+
+    # If there is a base neem given, load it
+    if args.base_neem:
+        base_neem_path = os.path.abspath(args.base_neem)
+        if os.path.isdir(base_neem_path):
+            remember_neem(base_neem_path)
+            base_neem = Neem()
+        else:
+            base_neem = Neem(base_neem_path)
+    # Calculate the velocity metric
+    for obj in n.get_all_objects_in_neem():
+        if "hand" in obj.name.lower():
+            hand_object = obj
+            break
+    vel = vel_metric(hand_object.get_tfs())
+    print(f"Velocity metric for NEEM {neem_path}: {vel}")
+
+    # If there is a base neem, calculate the event metric
+    if args.base_neem:
+        metrics = event_metric(n, n)
+        if args.metric and not args.validate:
+            print(f"Metric {args.metric} for NEEM {neem_path} and base NEEM {base_neem_path}: {metrics[args.metric]}")
+        elif args.validate:
+            for metric, values in metrics.items():
+                if not values:
+                    print(f"Metric {metric} is invalid")
+                    break
+            print("NEEM is valid")
+
+    else:
+        print("No base NEEM given, only velocity metric is calculated")
+
