@@ -1,5 +1,6 @@
 import pymongo
 import os
+from typing import List
 import bson
 
 client = pymongo.MongoClient('mongodb://localhost:27017/')
@@ -25,6 +26,13 @@ def get_tf_for_object(name):
     """
     return tf.find({"child_frame_id": name})
 
+def get_all_values_for_key(key: str) -> List:
+    """
+    Returns a list of values the given key can have in the TF collection.
+    :param key: Key for which all possible values should be found.
+    :return: A list of all values
+    """
+    return tf.distinct(key)
 
 def restore(path: str):
     """

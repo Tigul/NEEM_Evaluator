@@ -275,8 +275,22 @@ class Neem:
         self.end: int = self.action_list[-1].end
 
         self._set_relative_times()
+        self._try_correcting_tf_links()
 
         #self._calculate_action_tf_offset()
+
+    def _try_correcting_tf_links(self):
+        """
+        Tries to find matches for missing or not correctly mateched tf_links.
+        This is done by checking if there is a TF in mongo which is a subset of the
+        name of the NeemObject, this is ussully the case if unreal appended a _1.
+        """
+        no_link = list(filter(lambda x: not x.link_name, self.get_all_objects_in_neem()))
+        for collection_link_name in get_all_values_for_key("child_frame_id"):
+            for obj in no_link:
+                if collection_link_name in obj.name:
+                    obj.link_name = collection_link_name
+                    obj._load_tf()
 
     def _calculate_action_tf_offset(self):
         """
